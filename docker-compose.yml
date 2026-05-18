@@ -1,0 +1,39 @@
+services:
+  jenkins:
+    build: ./jenkins
+    container_name: jenkins_cnt
+    ports:
+      - "8090:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home_proj:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - jenkins_network_proj
+  remote_host:
+    build: ./remote_host
+    container_name: remote_host
+    privileged: true
+    networks:
+      - jenkins_network_proj
+  
+  db:
+    image: mysql:9
+    container_name: mysql_db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: mydatabase
+    ports:
+      - "3306:3306"
+    networks:
+      - jenkins_network
+    volumes:
+      - db_data_proj:/var/lib/mysql
+
+
+networks:
+  jenkins_network_proj:
+
+volumes:
+  jenkins_data_proj:
+  db_data_proj:
