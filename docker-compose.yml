@@ -10,13 +10,14 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - jenkins_network_proj
+
   remote_host:
     build: ./remote_host
     container_name: remote_host
     privileged: true
     networks:
       - jenkins_network_proj
-  
+
   db:
     image: mysql:9
     container_name: mysql_db
@@ -25,15 +26,56 @@ services:
       MYSQL_DATABASE: mydatabase
     ports:
       - "3306:3306"
-    networks:
-      - jenkins_network
     volumes:
       - db_data_proj:/var/lib/mysql
+    networks:
+      - jenkins_network_proj
 
+  sonar_db:
+    image: postgres:15
+    container_name: sonar_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: sonar
+      POSTGRES_DB: sonarqube
+    volumes:
+      - postgresql_data:/var/lib/postgresql/data
+    networks:
+      - jenkins_network_proj
+
+  sonarqube:
+    image: sonarqube:lts-community
+    container_name: sonarqube
+    restart: unless-stopped
+
+    depends_on:
+      - sonar_db
+
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://sonar_db:5432/sonarqube
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: sonar
+
+    ports:
+      - "9000:9000"
+
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_logs:/opt/sonarqube/logs
+      - sonarqube_extensions:/opt/sonarqube/extensions
+
+    networks:
+      - jenkins_network_proj
 
 networks:
   jenkins_network_proj:
+    
 
 volumes:
-  jenkins_data_proj:
+  jenkins_home_proj:
   db_data_proj:
+  postgresql_data:
+  sonarqube_data:
+  sonarqube_logs:
+  sonarqube_extensions:
